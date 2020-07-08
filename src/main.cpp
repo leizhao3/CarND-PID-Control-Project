@@ -1,6 +1,7 @@
 #include <math.h>
 #include <uWS/uWS.h>
 #include <iostream>
+#include <iomanip>
 #include <string>
 #include "json.hpp"
 #include "PID.h"
@@ -8,6 +9,10 @@
 // for convenience
 using nlohmann::json;
 using std::string;
+using std::vector;
+using std::cout;
+using std::endl;
+using std::setw;
 
 // For converting back and forth between radians and degrees.
 constexpr double pi() { return M_PI; }
@@ -37,6 +42,7 @@ int main() {
   /**
    * TODO: Initialize the pid variable.
    */
+  pid.Init(0,0,0, 1,1,1);
 
   h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, 
                      uWS::OpCode opCode) {
@@ -53,16 +59,23 @@ int main() {
 
         if (event == "telemetry") {
           // j[1] is the data JSON object
-          double cte = std::stod(j[1]["cte"].get<string>());
-          double speed = std::stod(j[1]["speed"].get<string>());
-          double angle = std::stod(j[1]["steering_angle"].get<string>());
+          double cte = std::stod(j[1]["cte"].get<string>());//[meter????]
+          double speed = std::stod(j[1]["speed"].get<string>());//[mph]
+          double angle = std::stod(j[1]["steering_angle"].get<string>()); //[deg]
+          pid.vehicle = {0.0, cte, speed, deg2rad(angle), 20.0};
+          //DEBUG
+          int width = 15;
+          cout << setw(width)<<"cte" << setw(width)<<"speed" << setw(width)<<"steering_angle" << endl;
+          cout << setw(width)<<cte << setw(width)<<speed << setw(width)<<angle << endl;
+
           double steer_value;
           /**
            * TODO: Calculate steering value here, remember the steering value is
-           *   [-1, 1].
+           *   [-1, 1].????????
            * NOTE: Feel free to play around with the throttle and speed.
            *   Maybe use another PID controller to control the speed!
            */
+          steer_value = angle;
           
           // DEBUG
           std::cout << "CTE: " << cte << " Steering Value: " << steer_value 
