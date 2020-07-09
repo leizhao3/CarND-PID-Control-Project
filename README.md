@@ -2,6 +2,19 @@
 Self-Driving Car Engineer Nanodegree Program
 
 ---
+## Reflection
+### Describe the effect each of the P, I, D components had in your implementation.
+* When I set tau_P or tau_I to 0, the car cannot go more than a few meters. Picture below:
+[![IMAGE ALT TEXT HERE](picture_video_output/2_Tau_d_0.png)](picture_video_output/2_Tau_d_0.png)
+
+* The difference is that, when tau_P=0 the steering angle is oscillating around the center line, and eventually the car get out of track.
+
+* When tau_D is equal to 0, the car only turns when the track have curvature (because CTE_del changes). 
+
+* When tau_I is equal to 0, it has really slight impact on the functionality. The reason is that this car doesn't have systematic bias. Therefore, only relying on Tau_P and Tau_D is sufficient.
+
+### Describe how the final hyperparameters were chosen.
+* The final hyperparameters is selected using twiddle. The input of the twiddle is the CTE & vehicle speed. Twiddle would pick the hyperparameters with minimum average error. 
 
 ## Dependencies
 

@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iomanip>
 #include <string>
+#include <algorithm>
 #include "json.hpp"
 #include "PID.h"
 
@@ -35,6 +36,14 @@ string hasData(string s) {
   return "";
 }
 
+/**
+ * A function that returns a value between 0 and 1 for x in the range [0, infinity] and 
+ *                                        -1 to 1 for x in the range [-infinity, infinity].
+ */
+double logistic(double x) {
+  return 2.0 / (1 + exp(-x)) - 1.0;
+}
+
 int main() {
   uWS::Hub h;
 
@@ -46,6 +55,9 @@ int main() {
 
   h.onMessage([&pid](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, 
                      uWS::OpCode opCode) {
+
+    const double CTE_MAX = 0.5;
+
     // "42" at the start of the message means there's a websocket message event.
     // The 4 signifies a websocket message
     // The 2 signifies a websocket event
@@ -59,33 +71,27 @@ int main() {
 
         if (event == "telemetry") {
           // j[1] is the data JSON object
-          double cte = std::stod(j[1]["cte"].get<string>());//[meter????]
+          double cte = std::stod(j[1]["cte"].get<string>());//[meter]
           double speed = std::stod(j[1]["speed"].get<string>());//[mph]
           double angle = std::stod(j[1]["steering_angle"].get<string>()); //[deg]
           pid.vehicle = {0.0, cte, speed, deg2rad(angle), 5.0};
-          //DEBUG
+          /*//DEBUG
           int width = 15;
           cout << "===============PID Controller===============" << endl;
           cout << setw(width)<<"cte[m]" << setw(width)<<"speed[mph]" << setw(width)<<"str_agl[deg]" << endl;
-          cout << setw(width)<<cte << setw(width)<<speed << setw(width)<<angle << endl;
+          cout << setw(width)<<cte << setw(width)<<speed << setw(width)<<angle << endl;*/
 
-          double steer_value = pid.GetSteering(cte);
-          steer_value = rad2deg(steer_value); //NOT sure
-
-          /**
-           * TODO: Calculate steering value here, remember the steering value is
-           *   [-1, 1].????????
-           * NOTE: Feel free to play around with the throttle and speed.
-           *   Maybe use another PID controller to control the speed!
-           */
+          double steer_value_rad = pid.GetSteering(cte);
+          double steer_value = steer_value_rad / 0.873;
+            //steer_value is [-1, 1] == [-25, +25] deg == [-0.873, +0.873] rad
           
-          // DEBUG
-          std::cout << "CTE: " << cte << " Steering Value: " << steer_value 
-                    << std::endl;
+          /*// DEBUG
+          std::cout << "CTE: " << cte << " Steering Value: " << steer_value << " Steering Value[deg]: " << steer_value*25
+                    << std::endl;*/
 
           json msgJson;
           msgJson["steering_angle"] = steer_value;
-          msgJson["throttle"] = 0.3;
+          msgJson["throttle"] = std::max(0.3*logistic(CTE_MAX/fabs(cte)),0.1); //reward low cte for higher throttle
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
           std::cout << msg << std::endl;
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);

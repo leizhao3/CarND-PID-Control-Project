@@ -102,9 +102,10 @@ class PID {
       double Kd;
 
       //Constants
-      const double MAX_STEERING_ANGLE = 1;
+      const double MAX_STEERING_ANGLE = 0.873; //[rad] or 25 [deg]
       const double TOL_STRAIGHT_LINE = 0.001; //[rad]
       const double TOL_TWIDDLE = 0.001; //[unitless] 
+      const double KI_CONST = 1; //[unitless] higher this number, smaller the overshoot
 
       /**
        * CTE Errors 
@@ -113,6 +114,7 @@ class PID {
       double cte_del;
       double cte_prev;
       bool cte_prev_initilized = false;
+      bool print_traj;
 
       
 

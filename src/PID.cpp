@@ -72,24 +72,40 @@ double PID::GetSteering(double cte) {
   DelError(cte);
   TotalError(cte);
 
+  /*//DEBUG
+  int width = 10;
+  cout << setw(width)<<"Kp" << setw(width)<<"Kd" << setw(width)<<"Ki"
+       << setw(width)<<"cte" << setw(width)<<"cte_del" << setw(width)<<"cte_sum" << endl;
+  cout << setw(width)<<Kp << setw(width)<<Kd << setw(width)<<Ki
+       << setw(width)<<cte << setw(width)<<cte_del << setw(width)<<cte_sum << endl;*/
+
   steering = - Kp*cte - Kd*cte_del - Ki*cte_sum;
 
   return steering;
 }
 
 void PID::Twiddle(){
+  print_traj = false;
+
   vector<double> p = {0.0, 0.0, 0.0}; //{tau_p, tau_d, tau_i}
   vector<double> dp = {1.0, 1.0, 1.0};
 
   VEHICLE vehicle_temp = vehicle;
   double best_err = Run(vehicle_temp, p);
-  cout << "---------PARAM RESULT---------" << endl;
-  cout << "initial best_err=" << best_err << endl;
+  //cout << "---------PARAM RESULT---------" << endl;
+  //cout << "initial best_err=" << best_err << endl;
   double err;
 
   while(std::accumulate(dp.begin(),dp.end(),0.0) > TOL_TWIDDLE) {
 
     for(int i=0; i<p.size(); i++) {
+
+      /*//DEBUG
+      if(i == 2) {
+        p[i] = 0;
+        dp[i] = 0;
+        continue;
+      }*/
 
       p[i] += dp[i];
       vehicle_temp = vehicle;
@@ -125,7 +141,7 @@ void PID::Twiddle(){
   Kd = p[1];
   Ki = p[2];
 
-  //DEBUG
+  /*//DEBUG
   int width = 15;
   cout << "p = ";
   for(int i=0; i<p.size(); i++) {
@@ -140,6 +156,13 @@ void PID::Twiddle(){
   cout << endl;
 
   cout << "best_err = " << best_err << endl;
+  
+  cout << "trajectory with best_error is" << endl;
+  cout << setw(width) << "x" << setw(width) << "y" << endl;
+  print_traj = true;
+  vehicle_temp = vehicle;
+  err = Run(vehicle_temp, p);
+  */
   
 }
 
@@ -157,9 +180,14 @@ double PID::Run(VEHICLE &vehicle_temp, vector<double> &params) {
   double error = 0;
   double prev_cte = vehicle_temp.y;
   double int_cte = 0;
-  double dT = 1; //[s] the time difference between n to n+1
+  double dT = 300/(speed_ms*2*n); //[s] the time difference between n to n+1
+
+  int width = 15;
 
   for(int i=0; i<(2*n); i++) {
+    if (print_traj) {
+      cout << setw(width) << vehicle_temp.x << setw(width) << vehicle_temp.y << endl;
+    }
     double cte = vehicle_temp.y;
     double diff_cte = cte - prev_cte;
     int_cte += cte;
