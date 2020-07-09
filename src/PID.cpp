@@ -6,6 +6,7 @@
 #include <iomanip>
 #include <functional>
 #include <numeric>
+#include <math.h>
 
 using std::string;
 using std::vector;
@@ -34,20 +35,46 @@ void PID::Init(double Kp_, double Ki_, double Kd_,
   i_error = i_error_;
   d_error = d_error_;
 
-}
-
-void PID::UpdateError(double cte) {
-  /**
-   * TODO: Update PID errors based on cte.
-   */
+  cte_sum = 0;
+  cte_del = 0;
 
 }
 
-double PID::TotalError() {
+void PID::DelError(double cte) {
   /**
-   * TODO: Calculate and return the total error
+   * Calculate the cte_del
    */
-  return 0.0;  // TODO: Add your total error calc here!
+
+  if (cte_prev_initilized) {
+    cte_del = cte - cte_prev;
+    cte_prev = cte;
+  } else {
+    cte_prev = cte;
+    cte_del = cte - cte_prev;
+    cte_prev_initilized = true;
+  }
+}
+
+void PID::TotalError(double cte) {
+  /**
+   * Calculate the total PID error.
+   */
+  cte_sum += cte;
+}
+
+/**
+ * @return [rad] steering needed for car
+ */
+double PID::GetSteering(double cte) {
+  double steering;
+
+  Twiddle();
+  DelError(cte);
+  TotalError(cte);
+
+  steering = - Kp*cte - Kd*cte_del - Ki*cte_sum;
+
+  return steering;
 }
 
 void PID::Twiddle(){
@@ -56,9 +83,12 @@ void PID::Twiddle(){
 
   VEHICLE vehicle_temp = vehicle;
   double best_err = Run(vehicle_temp, p);
+  cout << "---------PARAM RESULT---------" << endl;
+  cout << "initial best_err=" << best_err << endl;
   double err;
 
-  while(std::accumulate(p.begin(),p.end(),0) > TOL_TWIDDLE) {
+  while(std::accumulate(dp.begin(),dp.end(),0.0) > TOL_TWIDDLE) {
+
     for(int i=0; i<p.size(); i++) {
 
       p[i] += dp[i];
@@ -161,6 +191,30 @@ void PID::Move(VEHICLE &vehicle_temp, double steering, double distance) {
   if(distance < 0.0) {
     distance = 0.0;
   }
-  
 
+
+  //Execute motion, using rear wheel as reference point
+  double turn = tan(steering) * distance / vehicle.length;
+
+  if(fabs(turn) < TOL_STRAIGHT_LINE) {
+    //approximate by straight line motion
+    vehicle_temp.x += distance * cos(vehicle_temp.angle_rad);
+    vehicle_temp.y += distance * sin(vehicle_temp.angle_rad);
+    vehicle_temp.angle_rad = fmod(vehicle_temp.angle_rad+turn, 2.0 * M_PI);
+  }
+  else {
+    //approximate bicycle model for motion
+    double radius = distance / turn; //turning radius
+
+    //center of IRC(instantaneous rotation center)
+    double cx = vehicle_temp.x - (sin(vehicle_temp.angle_rad) * radius); 
+    double cy = vehicle_temp.y + (cos(vehicle_temp.angle_rad) * radius);
+
+    vehicle_temp.angle_rad = fmod(vehicle_temp.angle_rad+turn, 2.0 * M_PI);
+
+    //loc of ego car reference point after turning
+    vehicle_temp.x = cx + (sin(vehicle_temp.angle_rad) * radius);
+    vehicle_temp.y = cy - (cos(vehicle_temp.angle_rad) * radius);
+
+  }
 }

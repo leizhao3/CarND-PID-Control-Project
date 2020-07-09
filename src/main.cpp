@@ -62,20 +62,22 @@ int main() {
           double cte = std::stod(j[1]["cte"].get<string>());//[meter????]
           double speed = std::stod(j[1]["speed"].get<string>());//[mph]
           double angle = std::stod(j[1]["steering_angle"].get<string>()); //[deg]
-          pid.vehicle = {0.0, cte, speed, deg2rad(angle), 20.0};
+          pid.vehicle = {0.0, cte, speed, deg2rad(angle), 5.0};
           //DEBUG
           int width = 15;
-          cout << setw(width)<<"cte" << setw(width)<<"speed" << setw(width)<<"steering_angle" << endl;
+          cout << "===============PID Controller===============" << endl;
+          cout << setw(width)<<"cte[m]" << setw(width)<<"speed[mph]" << setw(width)<<"str_agl[deg]" << endl;
           cout << setw(width)<<cte << setw(width)<<speed << setw(width)<<angle << endl;
 
-          double steer_value;
+          double steer_value = pid.GetSteering(cte);
+          steer_value = rad2deg(steer_value); //NOT sure
+
           /**
            * TODO: Calculate steering value here, remember the steering value is
            *   [-1, 1].????????
            * NOTE: Feel free to play around with the throttle and speed.
            *   Maybe use another PID controller to control the speed!
            */
-          steer_value = angle;
           
           // DEBUG
           std::cout << "CTE: " << cte << " Steering Value: " << steer_value 

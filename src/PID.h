@@ -19,7 +19,7 @@ struct VEHICLE {
    double y;
    double speed; //[mph] the speed of the car at that moment
    double angle_rad; //[rad] the angle of the orientation of the vehicle
-   double length; //[meter??] length of the vehicle
+   double length; //[meter] length of the vehicle
 };
 
 class PID {
@@ -42,16 +42,22 @@ class PID {
                double p_error_, double i_error_, double d_error_);
 
       /**
-      * Update the PID error variables given cross track error.
+      * Calculate the cte_del
       * @param cte The current cross track error
       */
-      void UpdateError(double cte);
+      void DelError(double cte);
 
       /**
       * Calculate the total PID error.
-      * @output The total PID error
+      * @param cte The current cross track error
       */
-      double TotalError();
+      void TotalError(double cte);
+
+      /**
+      * @return the steering needed for car to manuver. 
+      * @param cte The current cross track error
+      */
+      double GetSteering(double cte);
 
       /**
       * Calculate the optimized parameter(minimized error) for the PID controller
@@ -97,8 +103,16 @@ class PID {
 
       //Constants
       const double MAX_STEERING_ANGLE = 1;
-      const double TOL_STRAIGHT_LINE = 0.001; //[???]
+      const double TOL_STRAIGHT_LINE = 0.001; //[rad]
       const double TOL_TWIDDLE = 0.001; //[unitless] 
+
+      /**
+       * CTE Errors 
+       */
+      double cte_sum;
+      double cte_del;
+      double cte_prev;
+      bool cte_prev_initilized = false;
 
       
 
